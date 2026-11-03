@@ -14,9 +14,9 @@ struct BrainDumpIntent: AppIntent {
         guard !title.isEmpty else { return .result(dialog: "Nothing to add.") }
         let store = Store.shared
         store.reload()
-        let when = When(rawValue: SharedStore.defaults.string(forKey: Keys.defaultWhen) ?? "")
-            .flatMap { When.defaults.contains($0) ? $0 : nil } ?? .later
-        store.add(NudgeTask(title: title, due: when.date(from: .now, picked: .now),
+        let when = ReminderWhen(rawValue: SharedStore.defaults.string(forKey: Keys.defaultWhen) ?? "")
+            .flatMap { ReminderWhen.defaults.contains($0) ? $0 : nil } ?? ReminderWhen.later
+        store.add(NudgeTask(title: title, due: when.date(from: Date.now, picked: Date.now),
                             nag: SharedStore.defaults.bool(forKey: Keys.defaultNag)))
         return .result(dialog: "Got it. It's in your brain dump.")
     }

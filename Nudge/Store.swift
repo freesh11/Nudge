@@ -228,6 +228,9 @@ final class Store: ObservableObject {
     }
 }
 
+/// AppIntents has its own `When`; files that import it use this name for ours.
+typealias ReminderWhen = When
+
 enum When: String, CaseIterable {
     case now, later, tomorrow, weekend, pick, leaveHome, arriveHome, someday
 
