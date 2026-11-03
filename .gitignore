@@ -1,0 +1,8 @@
+build/
+Nudge.xcodeproj/
+Nudge.ipa
+Payload/
+Nudge/Info.plist
+NudgeWidget/Info.plist
+Nudge/Nudge.entitlements
+NudgeWidget/NudgeWidget.entitlements
