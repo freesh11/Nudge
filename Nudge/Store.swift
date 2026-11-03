@@ -130,6 +130,10 @@ enum When: String, CaseIterable {
         assert(t.currentStep == "a")
         t.stepsDone = 2
         assert(t.currentStep == nil)
+        assert(Nudger.isQuiet(hour: 23, bed: 23, wake: 7) && Nudger.isQuiet(hour: 3, bed: 23, wake: 7))
+        assert(!Nudger.isQuiet(hour: 12, bed: 23, wake: 7) && !Nudger.isQuiet(hour: 7, bed: 23, wake: 7))
+        assert(Nudger.isQuiet(hour: 2, bed: 1, wake: 9) && !Nudger.isQuiet(hour: 10, bed: 1, wake: 9))
+        assert(!Nudger.isQuiet(hour: 5, bed: 6, wake: 6), "same start and end means no quiet hours")
     }
 }
 
@@ -142,4 +146,7 @@ enum Buddy {
     }
 }
 
-func haptic() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+func haptic() {
+    guard SharedStore.defaults.bool(forKey: Keys.haptics) else { return }
+    UINotificationFeedbackGenerator().notificationOccurred(.success)
+}

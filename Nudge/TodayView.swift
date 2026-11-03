@@ -54,7 +54,7 @@ struct TodayView: View {
         }
         .foregroundStyle(.white)
         .padding(20)
-        .background(Theme.ink, in: RoundedRectangle(cornerRadius: 24))
+        .background(Theme.night, in: RoundedRectangle(cornerRadius: 24))
         .accessibilityElement(children: .combine)
     }
 
@@ -77,12 +77,12 @@ struct TodayView: View {
                 Spacer()
                 if isNow {
                     Text("NOW").font(.caption2.weight(.heavy)).kerning(1).foregroundStyle(.white)
-                        .padding(.horizontal, 10).padding(.vertical, 4).background(Theme.ink, in: Capsule())
+                        .padding(.horizontal, 10).padding(.vertical, 4).background(Theme.night, in: Capsule())
                 }
             }
             .padding(.horizontal, 14)
             .frame(minHeight: 52)
-            .background(isNow ? accent.opacity(0.2) : .white, in: RoundedRectangle(cornerRadius: 16))
+            .background(isNow ? accent.opacity(0.2) : Theme.card, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(isNow ? accent : Theme.line, lineWidth: isNow ? 1.5 : 1))
         }
         .contextMenu {
@@ -100,11 +100,11 @@ struct TodayView: View {
             Spacer()
             Button("Do now") { store.doNow(t.id) }
                 .font(.subheadline.weight(.bold))
-                .foregroundStyle(Theme.indigo)
+                .foregroundStyle(Theme.link)
                 .frame(minWidth: 44, minHeight: 44)
         }
         .padding(.horizontal, 14)
-        .background(.white, in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line))
         .contextMenu {
             Button("Delete", systemImage: "trash", role: .destructive) { store.delete(t.id) }

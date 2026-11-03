@@ -6,6 +6,7 @@ struct NudgeView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(Keys.buddyName, store: SharedStore.defaults) private var buddyName = ""
     @AppStorage(Keys.buddyPhone, store: SharedStore.defaults) private var buddyPhone = ""
+    @AppStorage(Keys.onItMins, store: SharedStore.defaults) private var onItMins = 15
     let ref: NudgeRef
 
     private let orange = Theme.accent("orange")
@@ -37,7 +38,7 @@ struct NudgeView: View {
 
                 Spacer()
 
-                BigButton(title: "I'm on it", color: orange) { store.snooze(t.id, minutes: 15); dismiss() }
+                BigButton(title: "I'm on it", color: orange) { store.snooze(t.id, minutes: onItMins); dismiss() }
                 HStack(spacing: 12) {
                     OutlineButton(title: "5 more min", dark: true) { store.snooze(t.id, minutes: 5); dismiss() }
                     OutlineButton(title: "Move to later", dark: true) { store.snooze(t.id, minutes: 180); dismiss() }
@@ -49,7 +50,7 @@ struct NudgeView: View {
                                    body: "Hey, can you check that I did \"\(t.title)\"? My reminders aren't cutting it today.")
                     }
                 }
-                Text("\"I'm on it\" means I'll check back in 15 min.")
+                Text("\"I'm on it\" means I'll check back in \(onItMins) min.")
                     .font(.footnote).foregroundStyle(muted)
                     .frame(maxWidth: .infinity)
             } else {
@@ -62,6 +63,6 @@ struct NudgeView: View {
         .foregroundStyle(.white)
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Theme.ink)
+        .background(Theme.night)
     }
 }

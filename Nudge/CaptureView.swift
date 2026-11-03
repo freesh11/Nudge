@@ -6,9 +6,9 @@ struct CaptureView: View {
     @AppStorage(Keys.accent, store: SharedStore.defaults) private var accentName = "orange"
     @State private var title = ""
     @State private var step = ""
-    @State private var when: When = .later
+    @State private var when = When(rawValue: SharedStore.defaults.string(forKey: Keys.defaultWhen) ?? "") ?? .later
     @State private var picked = Date.now.addingTimeInterval(3600)
-    @State private var nag = true
+    @State private var nag = SharedStore.defaults.bool(forKey: Keys.defaultNag)
     @FocusState private var focused: Bool
 
     private var cleanTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -23,7 +23,7 @@ struct CaptureView: View {
                         .lineLimit(2...5)
                         .font(.title3.weight(.semibold))
                         .padding(16)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 18))
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.line, lineWidth: 1.5))
                         .focused($focused)
                     Text("Tip: tap the mic on your keyboard to talk instead of type.")
@@ -38,7 +38,7 @@ struct CaptureView: View {
                                     .font(.subheadline.weight(.bold))
                                     .foregroundStyle(on ? .white : Theme.ink)
                                     .frame(maxWidth: .infinity, minHeight: 48)
-                                    .background(on ? Theme.indigo : .white, in: RoundedRectangle(cornerRadius: 14))
+                                    .background(on ? Theme.indigo : Theme.card, in: RoundedRectangle(cornerRadius: 14))
                                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(on ? Theme.indigo : Theme.line, lineWidth: 1.5))
                             }
                             .accessibilityAddTraits(on ? .isSelected : [])
@@ -51,7 +51,7 @@ struct CaptureView: View {
                     SectionLabel("TINY FIRST STEP (OPTIONAL)")
                     TextField("e.g. Just open the email", text: $step)
                         .padding(16)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 18))
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.line, lineWidth: 1.5))
 
                     Toggle(isOn: $nag) {
@@ -62,7 +62,7 @@ struct CaptureView: View {
                     }
                     .tint(Theme.green)
                     .padding(16)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 18))
                 }
                 .foregroundStyle(Theme.ink)
                 .padding(20)

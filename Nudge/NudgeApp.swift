@@ -7,7 +7,12 @@ struct NudgeApp: App {
     @StateObject private var store = Store.shared
 
     init() {
-        SharedStore.defaults.register(defaults: [Keys.nudgeCount: 3, Keys.nudgeGap: 5, Keys.bedtime: 23, Keys.accent: "orange"])
+        SharedStore.defaults.register(defaults: [
+            Keys.nudgeCount: 3, Keys.nudgeGap: 5, Keys.bedtime: 23, Keys.accent: "orange",
+            Keys.appearance: "system", Keys.matchIcon: false, Keys.showWins: true, Keys.haptics: true,
+            Keys.sound: true, Keys.quietOn: true, Keys.wakeHour: 7, Keys.notYetMins: 10, Keys.onItMins: 15,
+            Keys.defaultWhen: When.later.rawValue, Keys.defaultNag: true,
+        ])
         #if DEBUG
         When.selfCheck()
         #endif
@@ -53,6 +58,7 @@ struct RootView: View {
     @Environment(\.scenePhase) private var phase
     @AppStorage(Keys.onboarded, store: SharedStore.defaults) private var onboarded = false
     @AppStorage(Keys.accent, store: SharedStore.defaults) private var accentName = "orange"
+    @AppStorage(Keys.appearance, store: SharedStore.defaults) private var appearance = "system"
     @State private var capturing = false
 
     var body: some View {
@@ -70,7 +76,7 @@ struct RootView: View {
                     Button { capturing = true } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 26, weight: .bold))
-                            .foregroundStyle(Theme.ink)
+                            .foregroundStyle(Theme.onAccent)
                             .frame(width: 64, height: 64)
                             .background(Theme.accent(accentName), in: Circle())
                             .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
@@ -84,7 +90,7 @@ struct RootView: View {
         }
         .fullScreenCover(item: $store.nudge) { NudgeView(ref: $0) }
         .onChange(of: phase) { _, p in if p == .active { store.reload() } }
-        .preferredColorScheme(.light)
+        .preferredColorScheme(Theme.scheme(appearance))
     }
 }
 
@@ -109,7 +115,7 @@ struct BigButton: View {
                 Text(title)
             }
             .font(.title3.weight(.heavy))
-            .foregroundStyle(Theme.ink)
+            .foregroundStyle(Theme.onAccent)
             .frame(maxWidth: .infinity, minHeight: 64)
             .background(color, in: RoundedRectangle(cornerRadius: 20))
         }
@@ -126,7 +132,7 @@ struct OutlineButton: View {
                 .font(.body.weight(.bold))
                 .foregroundStyle(dark ? .white : Theme.ink)
                 .frame(maxWidth: .infinity, minHeight: 52)
-                .background(dark ? Color.clear : Color.white, in: RoundedRectangle(cornerRadius: 16))
+                .background(dark ? Color.clear : Theme.card, in: RoundedRectangle(cornerRadius: 16))
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(dark ? Color(hex: 0x3A3E48) : Theme.line, lineWidth: 1.5))
         }
     }

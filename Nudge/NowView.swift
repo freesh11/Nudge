@@ -3,6 +3,9 @@ import SwiftUI
 struct NowView: View {
     @EnvironmentObject private var store: Store
     @AppStorage(Keys.accent, store: SharedStore.defaults) private var accentName = "orange"
+    @AppStorage(Keys.name, store: SharedStore.defaults) private var name = ""
+    @AppStorage(Keys.showWins, store: SharedStore.defaults) private var showWins = true
+    @AppStorage(Keys.notYetMins, store: SharedStore.defaults) private var notYetMins = 10
     @State private var breaking: NudgeTask?
 
     var body: some View {
@@ -18,7 +21,7 @@ struct NowView: View {
                         store.done(t.id)
                     }
                     HStack(spacing: 12) {
-                        OutlineButton(title: "Not yet · 10 min") { store.snooze(t.id, minutes: 10) }
+                        OutlineButton(title: "Not yet · \(notYetMins) min") { store.snooze(t.id, minutes: notYetMins) }
                         OutlineButton(title: "Break it down") { breaking = t }
                     }
                     if let next = store.upNext { upNext(next) }
@@ -35,7 +38,9 @@ struct NowView: View {
 
     private var greeting: String {
         let h = Calendar.current.component(.hour, from: .now)
-        return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"
+        let hello = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        return trimmed.isEmpty ? hello : "\(hello), \(trimmed)"
     }
 
     private var header: some View {
@@ -43,14 +48,16 @@ struct NowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(Date.now.formatted(.dateTime.weekday(.abbreviated).month().day()))
                     .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.grey)
-                Text(greeting).font(.system(size: 26, weight: .heavy))
+                Text(greeting).font(.system(size: 26, weight: .heavy)).lineLimit(1).minimumScaleFactor(0.7)
             }
             Spacer()
-            Label("\(store.winsToday) wins today", systemImage: "star")
-                .font(.subheadline.weight(.bold))
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(.white, in: Capsule())
-                .overlay(Capsule().stroke(Theme.line))
+            if showWins {
+                Label("\(store.winsToday) wins today", systemImage: "star")
+                    .font(.subheadline.weight(.bold))
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(Theme.card, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.line))
+            }
         }
         .foregroundStyle(Theme.ink)
     }
@@ -63,6 +70,7 @@ struct NowView: View {
                     .font(.caption.weight(.heavy)).kerning(1)
                     .padding(.horizontal, 12).padding(.vertical, 6)
                     .background(accent, in: Capsule())
+                    .foregroundStyle(Theme.onAccent)
                 Spacer()
                 if let due = t.due {
                     Text(due.formatted(date: Calendar.current.isDateInToday(due) ? .omitted : .abbreviated, time: .shortened))
@@ -89,7 +97,7 @@ struct NowView: View {
         .foregroundStyle(Theme.ink)
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white, in: RoundedRectangle(cornerRadius: 28))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 28))
         .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
     }
 
@@ -104,7 +112,7 @@ struct NowView: View {
                 Spacer()
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
-            .background(.white, in: RoundedRectangle(cornerRadius: 18))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 18))
             .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.line))
         }
     }
@@ -115,6 +123,7 @@ struct NowView: View {
                 .font(.system(size: 34, weight: .heavy))
                 .frame(width: 72, height: 72)
                 .background(accent, in: Circle())
+                .foregroundStyle(Theme.onAccent)
             Text("All clear.").font(.system(size: 32, weight: .heavy))
             Text(store.inbox.isEmpty
                  ? "Nothing needs you right now. Tap + whenever something pops into your head."
@@ -124,7 +133,7 @@ struct NowView: View {
         .foregroundStyle(Theme.ink)
         .padding(.vertical, 32).padding(.horizontal, 24)
         .frame(maxWidth: .infinity)
-        .background(.white, in: RoundedRectangle(cornerRadius: 28))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 28))
     }
 }
 

@@ -28,7 +28,7 @@ struct NudgeWidgetView: View {
     let entry: NudgeEntry
 
     var body: some View {
-        content.containerBackground(for: .widget) { Color.white }
+        content.containerBackground(for: .widget) { Theme.card }
     }
 
     @ViewBuilder private var content: some View {
@@ -55,8 +55,8 @@ struct NudgeWidgetView: View {
                         Label("Done", systemImage: "checkmark").font(.subheadline.weight(.heavy)).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(Theme.accent("orange"))
-                    .foregroundStyle(Theme.ink)
+                    .tint(Theme.accent(SharedStore.defaults.string(forKey: Keys.accent) ?? "orange"))
+                    .foregroundStyle(Theme.onAccent)
                 }
                 .foregroundStyle(Theme.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)

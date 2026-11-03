@@ -72,7 +72,7 @@ struct DevToolsView: View {
         let t = NudgeTask(title: "Test nudge", steps: ["This is only a test"], due: .now.addingTimeInterval(5), nag: count > 1)
         store.add(t)
         // Override the normal spacing so the whole series arrives within half a minute.
-        Nudger.schedule(t, count: count, gapSeconds: 10, buddyName: buddyName)
+        Nudger.schedule(t, count: count, gapSeconds: 10, buddyName: buddyName, quiet: false)
         note = count == 1 ? "Nudge coming in 5 sec." : "Nudges coming 5, 15 and 25 sec from now."
         Task {
             try? await Task.sleep(for: .seconds(1))
