@@ -26,8 +26,8 @@ struct AppBackground: View {
         ZStack {
             base
             if let s = LiveBackground(rawValue: style), s != .none {
-                // 30 fps is plenty for slow drift and saves battery; Reduce Motion freezes it.
-                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { ctx in
+                // 60 fps on ProMotion: smooth for slow drift at half the battery of 120. Reduce Motion freezes it.
+                TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { ctx in
                     Canvas { g, size in
                         let t = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 100_000)
                         LiveBackground.draw(s, in: &g, size: size, t: t, ink: ink, accent: Theme.accent(accentName))

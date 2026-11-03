@@ -8,9 +8,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - name: Use the newest stable Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_[0-9]*.app | grep -vi beta | sort -V | tail -1)"
+          xcodebuild -version
       - run: bash build-ipa.sh   # bash, so a lost executable bit from a web upload doesn't matter
       - uses: actions/upload-artifact@v4
         with:

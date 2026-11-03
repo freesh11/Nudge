@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import WidgetKit
 import UserNotifications
+import ActivityKit
 
 struct NudgeRef: Identifiable {
     let id: UUID
@@ -32,7 +33,10 @@ final class Store: ObservableObject {
         }.sorted { $0.due! < $1.due! }
     }
 
-    func reload() { tasks = SharedStore.load() }
+    func reload() {
+        tasks = SharedStore.load()
+        syncActivity()
+    }
 
     func add(_ t: NudgeTask) {
         tasks.append(t)
@@ -88,6 +92,28 @@ final class Store: ObservableObject {
     private func commit() {
         SharedStore.save(tasks)
         WidgetCenter.shared.reloadAllTimelines()
+        syncActivity()
+    }
+
+    /// Shows the current task in the Dynamic Island once it's due within 15 minutes.
+    // shortcut: iOS only lets an app start a Live Activity while it's open, so a task that
+    // comes due with the app closed appears once you open the app or tap its nudge.
+    func syncActivity() {
+        let running = Activity<NudgeActivity>.activities
+        var keep: String?
+        if d.bool(forKey: Keys.liveActivity), ActivityAuthorizationInfo().areActivitiesEnabled,
+           let t = current, let due = t.due, due <= .now.addingTimeInterval(15 * 60) {
+            keep = t.id.uuidString
+            let content = ActivityContent(state: NudgeActivity.ContentState(title: t.title, step: t.currentStep, due: due), staleDate: nil)
+            if let mine = running.first(where: { $0.attributes.taskID == keep }) {
+                Task { await mine.update(content) }
+            } else {
+                _ = try? Activity.request(attributes: NudgeActivity(taskID: t.id.uuidString), content: content)
+            }
+        }
+        for a in running where a.attributes.taskID != keep {
+            Task { await a.end(nil, dismissalPolicy: .immediate) }
+        }
     }
 }
 

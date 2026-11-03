@@ -11,6 +11,8 @@ SwiftUI app for iPhone (iOS 17+) with a home and lock screen widget.
 - **Settings:** nudge count and spacing, bedtime, accent color, buddy, re-run setup
 - **Onboarding:** 3 screens on first launch
 - **Widget:** shows the current task with a working Done button. Add it to the Home or Lock Screen.
+- **Dynamic Island:** when a task is due within 15 minutes, it shows in the Dynamic Island and on the Lock Screen with a live timer and a Done button.
+- **Built for iPhone 18 Pro / iOS 27:** newest Xcode, iOS 26+ only, 60 fps backgrounds on ProMotion.
 
 ## 1. Build the .ipa (pick one)
 

@@ -83,5 +83,82 @@ struct NudgeWidget: Widget {
 
 @main
 struct NudgeWidgetBundle: WidgetBundle {
-    var body: some Widget { NudgeWidget() }
+    var body: some Widget {
+        NudgeWidget()
+        NudgeLiveActivity()
+    }
+}
+
+/// Dynamic Island + Lock Screen: the current task with a live timer
+/// (counts down to the planned time, then counts up so you can see how long it's been).
+struct NudgeLiveActivity: Widget {
+    private var accent: Color { Theme.accent(SharedStore.defaults.string(forKey: Keys.accent) ?? "orange") }
+
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: NudgeActivity.self) { ctx in
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("RIGHT NOW").font(.caption2.weight(.heavy)).kerning(1).foregroundStyle(accent)
+                    Text(ctx.state.title).font(.headline.weight(.heavy)).lineLimit(2)
+                    if let step = ctx.state.step {
+                        Text(step).font(.subheadline).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 8) {
+                    Text(ctx.state.due, style: .timer)
+                        .font(.title3.weight(.bold)).monospacedDigit()
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 90, alignment: .trailing)
+                    doneButton(ctx.attributes.taskID)
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(16)
+            .activityBackgroundTint(Theme.night)
+            .activitySystemActionForegroundColor(.white)
+        } dynamicIsland: { ctx in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Image(systemName: "scope").font(.title2.weight(.bold)).foregroundStyle(accent)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    Text(ctx.state.due, style: .timer)
+                        .font(.title3.weight(.bold)).monospacedDigit()
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 80, alignment: .trailing)
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    Text(ctx.state.title).font(.headline.weight(.heavy)).lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    HStack {
+                        Text(ctx.state.step ?? "Just start. Two minutes counts.")
+                            .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                        Spacer(minLength: 8)
+                        doneButton(ctx.attributes.taskID)
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: "scope").foregroundStyle(accent)
+            } compactTrailing: {
+                Text(ctx.state.due, style: .timer)
+                    .monospacedDigit()
+                    .frame(maxWidth: 46)
+                    .foregroundStyle(accent)
+            } minimal: {
+                Image(systemName: "scope").foregroundStyle(accent)
+            }
+            .keylineTint(accent)
+        }
+    }
+
+    private func doneButton(_ taskID: String) -> some View {
+        Button(intent: CompleteTaskIntent(taskID: taskID)) {
+            Label("Done", systemImage: "checkmark").font(.subheadline.weight(.heavy))
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(accent)
+        .foregroundStyle(Theme.onAccent)
+    }
 }

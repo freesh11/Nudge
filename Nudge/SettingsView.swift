@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage(Keys.nudgeCount, store: SharedStore.defaults) private var nudgeCount = 3
     @AppStorage(Keys.nudgeGap, store: SharedStore.defaults) private var nudgeGap = 5
     @AppStorage(Keys.sound, store: SharedStore.defaults) private var sound = true
+    @AppStorage(Keys.liveActivity, store: SharedStore.defaults) private var liveActivity = true
     @AppStorage(Keys.quietOn, store: SharedStore.defaults) private var quietOn = true
     @AppStorage(Keys.bedtime, store: SharedStore.defaults) private var bedtime = 23
     @AppStorage(Keys.wakeHour, store: SharedStore.defaults) private var wakeHour = 7
@@ -43,6 +44,7 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .onChange(of: nudgeConfig) { store.rescheduleAll() }
+            .onChange(of: liveActivity) { store.syncActivity() }
             .onChange(of: "\(accentName)-\(matchIcon)") { applyIcon() }
         }
     }
@@ -83,6 +85,7 @@ struct SettingsView: View {
                 ForEach([5, 10, 15, 30], id: \.self) { Text("\($0) min").tag($0) }
             }
             Toggle("Sound", isOn: $sound)
+            Toggle("Dynamic Island timer", isOn: $liveActivity)
             Button("Phone notification settings") {
                 if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
             }

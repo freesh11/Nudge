@@ -4,6 +4,8 @@ import SwiftUI
 import UserNotifications
 import AppIntents
 import UIKit
+import ActivityKit
+import WidgetKit
 
 struct NudgeTask: Identifiable, Codable, Equatable {
     var id = UUID()
@@ -38,6 +40,7 @@ enum Keys {
     static let defaultWhen = "defaultWhen"
     static let defaultNag = "defaultNag"
     static let background = "background"
+    static let liveActivity = "liveActivity"
 }
 
 enum SharedStore {
@@ -142,7 +145,18 @@ enum Nudger {
 }
 
 /// Lets the widget's Done button finish a task without opening the app.
-struct CompleteTaskIntent: AppIntent {
+/// The current task, shown in the Dynamic Island and on the Lock Screen.
+struct NudgeActivity: ActivityAttributes {
+    struct ContentState: Codable, Hashable {
+        var title: String
+        var step: String?
+        var due: Date
+    }
+    var taskID: String
+}
+
+/// LiveActivityIntent runs it in the app's process, so it can also close the Live Activity.
+struct CompleteTaskIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Mark done"
     @Parameter(title: "Task ID") var taskID: String
 
@@ -156,6 +170,10 @@ struct CompleteTaskIntent: AppIntent {
             SharedStore.save(tasks)
             Nudger.cancel(tasks[i].id)
         }
+        for activity in Activity<NudgeActivity>.activities where activity.attributes.taskID == taskID {
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
+        WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
 }

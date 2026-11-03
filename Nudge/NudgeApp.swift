@@ -12,7 +12,7 @@ struct NudgeApp: App {
             Keys.appearance: "system", Keys.matchIcon: false, Keys.showWins: true, Keys.haptics: true,
             Keys.sound: true, Keys.quietOn: true, Keys.wakeHour: 7, Keys.notYetMins: 10, Keys.onItMins: 15,
             Keys.defaultWhen: When.later.rawValue, Keys.defaultNag: true,
-            Keys.background: LiveBackground.constellations.rawValue,
+            Keys.background: LiveBackground.constellations.rawValue, Keys.liveActivity: true,
         ])
         #if DEBUG
         When.selfCheck()
