@@ -12,6 +12,16 @@ enum LiveBackground: String, CaseIterable, Identifiable {
         case .fireflies: return "Fireflies"
         }
     }
+
+    /// Frames per second each style needs to look smooth; slow ones don't need 60.
+    var fps: Double {
+        switch self {
+        case .constellations: return 60
+        case .starfield, .fireflies: return 30
+        case .aurora: return 15
+        case .none: return 1
+        }
+    }
 }
 
 /// The screen background: a base color plus the chosen live animation.
@@ -21,13 +31,14 @@ struct AppBackground: View {
     @AppStorage(Keys.background, store: SharedStore.defaults) private var style = LiveBackground.constellations.rawValue
     @AppStorage(Keys.accent, store: SharedStore.defaults) private var accentName = "orange"
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
 
     var body: some View {
         ZStack {
             base
             if let s = LiveBackground(rawValue: style), s != .none {
-                // 60 fps on ProMotion: smooth for slow drift at half the battery of 120. Reduce Motion freezes it.
-                TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { ctx in
+                // Low Power Mode drops to 10 fps; Reduce Motion freezes it.
+                TimelineView(.animation(minimumInterval: 1.0 / (lowPower ? 10 : s.fps), paused: reduceMotion)) { ctx in
                     Canvas { g, size in
                         let t = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 100_000)
                         LiveBackground.draw(s, in: &g, size: size, t: t, ink: ink, accent: Theme.accent(accentName))
@@ -36,6 +47,9 @@ struct AppBackground: View {
             }
         }
         .ignoresSafeArea()
+        .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
+            lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+        }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
@@ -78,16 +92,20 @@ extension LiveBackground {
             let angle = rnd(i, 1) * 2 * .pi, speed = 4 + rnd(i, 2) * 8
             pts.append((wrap(rnd(i, 3) * w + cos(angle) * speed * t, w), wrap(rnd(i, 4) * h + sin(angle) * speed * t, h)))
         }
+        let bands = 4
+        var lines = [Path](repeating: Path(), count: bands)   // nearer pairs → brighter band
         for i in 0..<n {
             for j in (i + 1)..<n {
                 let dx = pts[i].0 - pts[j].0, dy = pts[i].1 - pts[j].1
-                let d = (dx * dx + dy * dy).squareRoot()
-                guard d < reach else { continue }
-                var line = Path()
-                line.move(to: CGPoint(x: pts[i].0, y: pts[i].1))
-                line.addLine(to: CGPoint(x: pts[j].0, y: pts[j].1))
-                g.stroke(line, with: .color(ink.opacity((1 - d / reach) * 0.3)), lineWidth: 1)
+                let d2 = dx * dx + dy * dy
+                guard d2 < reach * reach else { continue }
+                let band = min(bands - 1, Int((1 - d2.squareRoot() / reach) * Double(bands)))
+                lines[band].move(to: CGPoint(x: pts[i].0, y: pts[i].1))
+                lines[band].addLine(to: CGPoint(x: pts[j].0, y: pts[j].1))
             }
+        }
+        for (band, path) in lines.enumerated() {
+            g.stroke(path, with: .color(ink.opacity((Double(band) + 0.5) / Double(bands) * 0.3)), lineWidth: 1)
         }
         for (i, p) in pts.enumerated() {
             let twinkle = 0.45 + 0.35 * sin(t * (0.8 + rnd(i, 5) * 1.5) + rnd(i, 6) * 6.28)
@@ -108,15 +126,15 @@ extension LiveBackground {
 
     /// Soft blurred color glows slowly orbiting the screen.
     private static func aurora(_ g: inout GraphicsContext, _ w: Double, _ h: Double, _ t: Double, _ accent: Color) {
-        var layer = g
-        layer.addFilter(.blur(radius: 70))
         let colors = [accent, Color(hex: 0x8FA2FF), Color(hex: 0x4FD1A5)]
         for (i, c) in colors.enumerated() {
             let k = Double(i)
             let x = w * (0.5 + 0.35 * sin(t * (0.07 + k * 0.02) + k * 2))
             let y = h * (0.35 + 0.3 * cos(t * (0.05 + k * 0.015) + k))
             let r = w * (0.45 + 0.1 * sin(t * 0.1 + k))
-            layer.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r * 0.7, width: r * 2, height: r * 1.4)), with: .color(c.opacity(0.28)))
+            let glow = Gradient(colors: [c.opacity(0.3), c.opacity(0.12), c.opacity(0)])
+            g.fill(Path(ellipseIn: CGRect(x: x - r * 1.4, y: y - r * 1.4, width: r * 2.8, height: r * 2.8)),
+                   with: .radialGradient(glow, center: CGPoint(x: x, y: y), startRadius: 0, endRadius: r * 1.4))
         }
     }
 

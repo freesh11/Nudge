@@ -92,7 +92,8 @@ enum Nudger {
 
     /// Escalating nudges: one at the due time, then repeats every `gapSeconds` up to `count`.
     static func schedule(_ t: NudgeTask, count: Int, gapSeconds: Int, buddyName: String, quiet: Bool = true) {
-        cancel(t.id)
+        // Only pending ones: a nudge already sitting in Notification Center stays visible.
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids(t.id))
         guard let due = t.due, t.doneAt == nil else { return }
         let total = t.nag ? min(max(1, count), 5) : 1
         for n in 0..<total {
@@ -137,10 +138,26 @@ enum Nudger {
         bed > wake ? (h >= bed || h < wake) : (h >= bed && h < wake)
     }
 
+    static func ids(_ id: UUID) -> [String] { (0..<5).map { "\(id.uuidString)-\($0)" } }
+
     static func cancel(_ id: UUID) {
-        let ids = (0..<5).map { "\(id.uuidString)-\($0)" }
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids(id))
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids(id))
+    }
+
+    /// iOS keeps only 64 pending notifications per app and silently drops the rest.
+    /// Takes tasks soonest-first and keeps those whose future nudges fit in `budget`.
+    static func withinBudget(_ soonestFirst: [NudgeTask], count: Int, gapSeconds: Int, budget: Int = 60, now: Date = .now) -> [NudgeTask] {
+        var used = 0, picked: [NudgeTask] = []
+        for t in soonestFirst {
+            guard let due = t.due else { continue }
+            let total = t.nag ? min(max(1, count), 5) : 1
+            let need = (0..<total).filter { due.addingTimeInterval(Double($0 * gapSeconds)) > now }.count
+            if used + need > budget { break }
+            used += need
+            picked.append(t)
+        }
+        return picked
     }
 }
 

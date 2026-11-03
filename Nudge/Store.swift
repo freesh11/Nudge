@@ -33,14 +33,20 @@ final class Store: ObservableObject {
         }.sorted { $0.due! < $1.due! }
     }
 
+    /// Runs when the app opens: drops old finished tasks and tops up nudges for later tasks.
     func reload() {
         tasks = SharedStore.load()
+        let cutoff = Date.now.addingTimeInterval(-30 * 86400)
+        if tasks.contains(where: { ($0.doneAt ?? .distantFuture) < cutoff }) {
+            tasks.removeAll { ($0.doneAt ?? .distantFuture) < cutoff }   // nothing shows tasks finished 30+ days ago
+            SharedStore.save(tasks)
+        }
+        rescheduleAll()
         syncActivity()
     }
 
     func add(_ t: NudgeTask) {
         tasks.append(t)
-        schedule(t)
         commit()
     }
 
@@ -75,22 +81,26 @@ final class Store: ObservableObject {
         commit()
     }
 
-    func rescheduleAll() { tasks.forEach { schedule($0) } }
+    /// Re-plans every nudge, soonest tasks first, within iOS's notification limit.
+    func rescheduleAll() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        let count = d.integer(forKey: Keys.nudgeCount), gap = d.integer(forKey: Keys.nudgeGap) * 60
+        let buddy = d.string(forKey: Keys.buddyName) ?? ""
+        for t in Nudger.withinBudget(openTasks, count: count, gapSeconds: gap) {
+            Nudger.schedule(t, count: count, gapSeconds: gap, buddyName: buddy)
+        }
+    }
 
     private func update(_ id: UUID, _ change: (inout NudgeTask) -> Void) {
         guard let i = tasks.firstIndex(where: { $0.id == id }) else { return }
         change(&tasks[i])
-        schedule(tasks[i])
+        Nudger.cancel(id)   // also clears this task's old banners
         commit()
-    }
-
-    private func schedule(_ t: NudgeTask) {
-        Nudger.schedule(t, count: d.integer(forKey: Keys.nudgeCount), gapSeconds: d.integer(forKey: Keys.nudgeGap) * 60,
-                        buddyName: d.string(forKey: Keys.buddyName) ?? "")
     }
 
     private func commit() {
         SharedStore.save(tasks)
+        rescheduleAll()
         WidgetCenter.shared.reloadAllTimelines()
         syncActivity()
     }
@@ -160,6 +170,10 @@ enum When: String, CaseIterable {
         assert(!Nudger.isQuiet(hour: 12, bed: 23, wake: 7) && !Nudger.isQuiet(hour: 7, bed: 23, wake: 7))
         assert(Nudger.isQuiet(hour: 2, bed: 1, wake: 9) && !Nudger.isQuiet(hour: 10, bed: 1, wake: 9))
         assert(!Nudger.isQuiet(hour: 5, bed: 6, wake: 6), "same start and end means no quiet hours")
+        let soon = (1...4).map { NudgeTask(title: "t\($0)", due: now.addingTimeInterval(Double($0) * 3600)) }
+        assert(Nudger.withinBudget(soon, count: 3, gapSeconds: 300, budget: 7).count == 2, "3 nudges each: only 2 tasks fit in 7")
+        let overdue = NudgeTask(title: "late", due: now.addingTimeInterval(-3600))
+        assert(Nudger.withinBudget([overdue] + soon, count: 3, gapSeconds: 300, budget: 6).count == 3, "fired nudges cost nothing")
         assert(LiveBackground.wrap(-5, 100) == 95 && LiveBackground.wrap(250, 100) == 50)
         assert((0..<500).allSatisfy { i in (0..<10).allSatisfy { (0..<1).contains(LiveBackground.rnd(i, $0)) } })
     }

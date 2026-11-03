@@ -17,9 +17,12 @@ struct Provider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<NudgeEntry>) -> Void) {
-        let entry = NudgeEntry(date: .now, task: SharedStore.openTasks(in: SharedStore.load()).first)
-        // The app reloads the widget on every change; this just keeps "RIGHT NOW" vs "NEXT" fresh.
-        completion(Timeline(entries: [entry], policy: .after(.now.addingTimeInterval(15 * 60))))
+        let task = SharedStore.openTasks(in: SharedStore.load()).first
+        var entries = [NudgeEntry(date: .now, task: task)]
+        // A second entry flips "NEXT" to "RIGHT NOW" exactly when the task comes due.
+        if let due = task?.due, due > .now { entries.append(NudgeEntry(date: due, task: task)) }
+        // The app reloads the widget on every change; the hourly refresh is only a backstop.
+        completion(Timeline(entries: entries, policy: .after(.now.addingTimeInterval(3600))))
     }
 }
 
