@@ -12,6 +12,12 @@ SwiftUI app for iPhone (iOS 17+) with a home and lock screen widget.
 - **Onboarding:** 3 screens on first launch
 - **Widget:** shows the current task with a working Done button. Add it to the Home or Lock Screen.
 - **Dynamic Island:** when a task is due within 15 minutes, it shows in the Dynamic Island and on the Lock Screen with a live timer and a Done button.
+- **Repeating tasks**, **leave/arrive Home reminders**, **get-ready time** (nudges start early), **time guesses vs real time**
+- **Energy check-in** hides harder tasks on low days; **Pick one for me** chooses from your brain dump
+- **"Start with me" focus timer** with a shrinking time disk on the Now card and in the Dynamic Island
+- **Today** can show your calendar; **Sunday wins recap**; **Done sound + haptic**
+- **Siri / Action Button:** "Brain dump in Nudge", or assign the "Add to brain dump" shortcut to the Action Button
+- **Backup and restore** to Files (Settings › Backup)
 - **Built for iPhone 18 Pro / iOS 27:** newest Xcode, iOS 26+ only, 60 fps backgrounds on ProMotion.
 
 ## 1. Build the .ipa (pick one)

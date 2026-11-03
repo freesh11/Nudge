@@ -26,6 +26,10 @@ struct DevToolsView: View {
             Section {
                 Button("Single nudge in 5 sec") { testNudge(count: 1) }
                 Button("3 nudges, 10 sec apart") { testNudge(count: 3) }
+                Button("Weekly recap in 5 sec") {
+                    Nudger.scheduleRecap(wins: store.winsThisWeek.count, at: .now.addingTimeInterval(5))
+                    note = "Recap coming in 5 sec. It returns to Sunday 6 PM after your next change."
+                }
             } header: { Text("Notifications") } footer: {
                 Text("Lock your phone to see them as real notifications. Each test adds a \"Test nudge\" task you can mark Done.")
             }

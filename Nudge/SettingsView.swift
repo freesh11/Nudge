@@ -1,5 +1,64 @@
 import SwiftUI
 import UIKit
+import CoreLocation
+import UniformTypeIdentifiers
+
+/// One-shot "where am I" to save Home. Only needs While Using permission.
+@MainActor
+final class HomeLocator: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published var status = ""
+    private let manager = CLLocationManager()
+    private var waiting = false
+
+    func saveCurrentAsHome() {
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        waiting = true
+        status = "Finding you…"
+        switch manager.authorizationStatus {
+        case .notDetermined: manager.requestWhenInUseAuthorization()   // continues in the callback
+        case .denied, .restricted: waiting = false; status = "Location is off for Nudge in iOS Settings."
+        default: manager.requestLocation()
+        }
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ m: CLLocationManager) {
+        let s = m.authorizationStatus
+        Task { @MainActor in
+            guard self.waiting else { return }
+            if s == .authorizedWhenInUse || s == .authorizedAlways { self.manager.requestLocation() }
+            else if s == .denied || s == .restricted { self.waiting = false; self.status = "Location is off for Nudge in iOS Settings." }
+        }
+    }
+
+    nonisolated func locationManager(_ m: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let c = locations.last?.coordinate else { return }
+        Task { @MainActor in
+            guard self.waiting else { return }
+            self.waiting = false
+            SharedStore.defaults.set(c.latitude, forKey: Keys.homeLat)
+            SharedStore.defaults.set(c.longitude, forKey: Keys.homeLon)
+            self.status = "Home saved."
+            Store.shared.rescheduleAll()
+        }
+    }
+
+    nonisolated func locationManager(_ m: CLLocationManager, didFailWithError error: Error) {
+        Task { @MainActor in
+            self.waiting = false
+            self.status = "Couldn't find your location. Try again outside or near a window."
+        }
+    }
+}
+
+/// The tasks file, for saving to Files and restoring later.
+struct BackupDoc: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+    var data: Data
+    init(data: Data) { self.data = data }
+    init(configuration: ReadConfiguration) throws { data = configuration.file.regularFileContents ?? Data() }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }
+}
 
 struct SettingsView: View {
     @EnvironmentObject private var store: Store
@@ -24,9 +83,20 @@ struct SettingsView: View {
     @AppStorage(Keys.buddyName, store: SharedStore.defaults) private var buddyName = ""
     @AppStorage(Keys.buddyPhone, store: SharedStore.defaults) private var buddyPhone = ""
     @AppStorage(Keys.onboarded, store: SharedStore.defaults) private var onboarded = true
+    @AppStorage(Keys.showCalendar, store: SharedStore.defaults) private var showCalendar = false
+    @AppStorage(Keys.weeklyRecap, store: SharedStore.defaults) private var weeklyRecap = true
+    @AppStorage(Keys.doneSound, store: SharedStore.defaults) private var doneSound = true
+    @AppStorage(Keys.focusMins, store: SharedStore.defaults) private var focusMins = 5
+    @AppStorage(Keys.homeLat, store: SharedStore.defaults) private var homeLat: Double?
+    @StateObject private var locator = HomeLocator()
+    @State private var calendarNote = ""
+    @State private var exporting = false
+    @State private var importing = false
+    @State private var restoreCandidate: [NudgeTask]?
+    @State private var backupNote = ""
 
     /// Anything that changes what gets scheduled; one key keeps it to a single onChange.
-    private var nudgeConfig: String { "\(nudgeCount)-\(nudgeGap)-\(sound)-\(quietOn)-\(bedtime)-\(wakeHour)-\(buddyName)" }
+    private var nudgeConfig: String { "\(nudgeCount)-\(nudgeGap)-\(sound)-\(quietOn)-\(bedtime)-\(wakeHour)-\(buddyName)-\(weeklyRecap)" }
 
     var body: some View {
         NavigationStack {
@@ -36,7 +106,10 @@ struct SettingsView: View {
                 night
                 buttons
                 brainDump
+                places
+                today
                 buddy
+                backup
                 Section {
                     NavigationLink("Developer tools") { DevToolsView() }
                     Button("Run setup again") { onboarded = false }
@@ -77,6 +150,7 @@ struct SettingsView: View {
             TextField("Your name, for the greeting", text: $name)
             Toggle("Show wins counter", isOn: $showWins)
             Toggle("Haptics", isOn: $haptics)
+            Toggle("Sound when you finish", isOn: $doneSound)
         }
     }
 
@@ -88,6 +162,10 @@ struct SettingsView: View {
             }
             Toggle("Sound", isOn: $sound)
             Toggle("Dynamic Island timer", isOn: $liveActivity)
+            Picker("\u{201C}Start with me\u{201D} timer", selection: $focusMins) {
+                ForEach([2, 5, 10, 15, 25], id: \.self) { Text("\($0) min").tag($0) }
+            }
+            Toggle("Sunday wins recap", isOn: $weeklyRecap)
             Button("Phone notification settings") {
                 if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
             }
@@ -124,9 +202,76 @@ struct SettingsView: View {
     private var brainDump: some View {
         Section("Brain dump") {
             Picker("Default reminder", selection: $defaultWhen) {
-                ForEach(When.allCases.filter { $0 != .pick }, id: \.self) { Text($0.label).tag($0.rawValue) }
+                ForEach(When.defaults, id: \.self) { Text($0.label).tag($0.rawValue) }
             }
             Toggle("Nag by default", isOn: $defaultNag)
+        }
+    }
+
+    private var places: some View {
+        Section {
+            LabeledContent("Home", value: homeLat == nil ? "Not set" : "Set")
+            Button(homeLat == nil ? "Set Home to where I am now" : "Update Home to where I am now") { locator.saveCurrentAsHome() }
+        } header: { Text("Places") } footer: {
+            Text(locator.status.isEmpty
+                 ? "Used for \u{201C}When I leave home\u{201D} and \u{201C}When I get home\u{201D} reminders. Your location stays on your phone."
+                 : locator.status)
+        }
+    }
+
+    private var today: some View {
+        Section {
+            Toggle("Show my calendar", isOn: $showCalendar)
+        } header: { Text("Today screen") } footer: {
+            Text(calendarNote.isEmpty ? "Puts today's calendar events in your timeline. Read-only." : calendarNote)
+        }
+        .onChange(of: showCalendar) { _, on in
+            guard on else { calendarNote = ""; return }
+            Task {
+                if await CalendarFeed.requestAccess() {
+                    calendarNote = ""
+                } else {
+                    showCalendar = false
+                    calendarNote = "Calendar access is off. Turn it on for Nudge in iOS Settings › Privacy › Calendars."
+                }
+            }
+        }
+    }
+
+    private var backup: some View {
+        Section {
+            Button("Save a backup to Files") { exporting = true }
+            Button("Restore from a backup") { importing = true }
+        } header: { Text("Backup") } footer: {
+            Text(backupNote.isEmpty ? "Do this before reinstalling, in case the new install starts empty." : backupNote)
+        }
+        .fileExporter(isPresented: $exporting,
+                      document: BackupDoc(data: (try? JSONEncoder().encode(store.tasks)) ?? Data()),
+                      contentType: .json,
+                      defaultFilename: "Nudge backup \(Date.now.formatted(.iso8601.year().month().day()))") { result in
+            if case .success = result { backupNote = "Backup saved." }
+            if case .failure = result { backupNote = "Couldn't save the backup." }
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+            guard case .success(let url) = result else { return }
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            // A bad file must never replace your list, so decode fully before asking.
+            guard let data = try? Data(contentsOf: url),
+                  let tasks = try? JSONDecoder().decode([NudgeTask].self, from: data) else {
+                backupNote = "That file isn't a Nudge backup."
+                return
+            }
+            restoreCandidate = tasks
+        }
+        .confirmationDialog("Replace your list with this backup?", isPresented: .init(
+            get: { restoreCandidate != nil }, set: { if !$0 { restoreCandidate = nil } }), titleVisibility: .visible) {
+            Button("Replace \(store.tasks.count) tasks with \(restoreCandidate?.count ?? 0)", role: .destructive) {
+                if let r = restoreCandidate { store.replaceAll(r); backupNote = "Restored \(r.count) tasks." }
+                restoreCandidate = nil
+            }
+        } message: {
+            Text("Your current tasks will be replaced. Save a backup first if you want to keep them.")
         }
     }
 

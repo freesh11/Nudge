@@ -13,6 +13,7 @@ struct NudgeApp: App {
             Keys.sound: true, Keys.quietOn: true, Keys.wakeHour: 7, Keys.notYetMins: 10, Keys.onItMins: 15,
             Keys.defaultWhen: When.later.rawValue, Keys.defaultNag: true,
             Keys.background: LiveBackground.constellations.rawValue, Keys.liveActivity: true,
+            Keys.showCalendar: false, Keys.weeklyRecap: true, Keys.doneSound: true, Keys.focusMins: 5,
         ])
         #if DEBUG
         When.selfCheck()
@@ -39,6 +40,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         let info = response.notification.request.content.userInfo
+        if info["recap"] != nil {
+            await MainActor.run { Store.shared.showWins = true }
+            return
+        }
         guard let raw = info["task"] as? String, let id = UUID(uuidString: raw) else { return }
         let last = info["last"] as? Bool ?? false
         let action = response.actionIdentifier
@@ -90,6 +95,7 @@ struct RootView: View {
             }
         }
         .fullScreenCover(item: $store.nudge) { NudgeView(ref: $0) }
+        .sheet(isPresented: $store.showWins) { WinsView() }
         .onChange(of: phase) { _, p in if p == .active { store.reload() } }
         .preferredColorScheme(Theme.scheme(appearance))
     }

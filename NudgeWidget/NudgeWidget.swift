@@ -101,7 +101,7 @@ struct NudgeLiveActivity: Widget {
         ActivityConfiguration(for: NudgeActivity.self) { ctx in
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("RIGHT NOW").font(.caption2.weight(.heavy)).kerning(1).foregroundStyle(accent)
+                    Text(ctx.state.focusUntil == nil ? "RIGHT NOW" : "FOCUS").font(.caption2.weight(.heavy)).kerning(1).foregroundStyle(accent)
                     Text(ctx.state.title).font(.headline.weight(.heavy)).lineLimit(2)
                     if let step = ctx.state.step {
                         Text(step).font(.subheadline).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
@@ -109,7 +109,7 @@ struct NudgeLiveActivity: Widget {
                 }
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 8) {
-                    Text(ctx.state.due, style: .timer)
+                    Text(ctx.state.focusUntil ?? ctx.state.due, style: .timer)
                         .font(.title3.weight(.bold)).monospacedDigit()
                         .multilineTextAlignment(.trailing)
                         .frame(maxWidth: 90, alignment: .trailing)
@@ -126,7 +126,7 @@ struct NudgeLiveActivity: Widget {
                     Image(systemName: "scope").font(.title2.weight(.bold)).foregroundStyle(accent)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(ctx.state.due, style: .timer)
+                    Text(ctx.state.focusUntil ?? ctx.state.due, style: .timer)
                         .font(.title3.weight(.bold)).monospacedDigit()
                         .multilineTextAlignment(.trailing)
                         .frame(maxWidth: 80, alignment: .trailing)
@@ -145,7 +145,7 @@ struct NudgeLiveActivity: Widget {
             } compactLeading: {
                 Image(systemName: "scope").foregroundStyle(accent)
             } compactTrailing: {
-                Text(ctx.state.due, style: .timer)
+                Text(ctx.state.focusUntil ?? ctx.state.due, style: .timer)
                     .monospacedDigit()
                     .frame(maxWidth: 46)
                     .foregroundStyle(accent)

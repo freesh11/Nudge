@@ -30,7 +30,8 @@ struct NudgeView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("JUST DO THIS PART").font(.caption.weight(.heavy)).kerning(1).foregroundStyle(muted)
                     Text(t.currentStep ?? "Start for two minutes. That's it.").font(.title2.weight(.bold))
-                    Text("The rest usually follows.").font(.subheadline).foregroundStyle(muted)
+                    Text(store.lastDuration(for: t.title).map { "Took \(formatMinutes($0)) last time." } ?? "The rest usually follows.")
+                        .font(.subheadline).foregroundStyle(muted)
                 }
                 .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -38,12 +39,12 @@ struct NudgeView: View {
 
                 Spacer()
 
-                BigButton(title: "I'm on it", color: orange) { store.snooze(t.id, minutes: onItMins); dismiss() }
+                BigButton(title: "I'm on it", color: orange) { store.onIt(t.id, minutes: onItMins); dismiss() }
                 HStack(spacing: 12) {
                     OutlineButton(title: "5 more min", dark: true) { store.snooze(t.id, minutes: 5); dismiss() }
                     OutlineButton(title: "Move to later", dark: true) { store.snooze(t.id, minutes: 180); dismiss() }
                 }
-                OutlineButton(title: "Already done", dark: true) { haptic(); store.complete(t.id); dismiss() }
+                OutlineButton(title: "Already done", dark: true) { Celebrate.done(); store.complete(t.id); dismiss() }
                 if ref.last && !buddyPhone.isEmpty {
                     OutlineButton(title: "Text \(buddyName.isEmpty ? "your buddy" : buddyName) for backup", dark: true) {
                         Buddy.text(phone: buddyPhone,

@@ -27,6 +27,8 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIRequiresFullScreen: true
         NSSupportsLiveActivities: true
+        NSLocationWhenInUseUsageDescription: Nudge uses your Home location to remind you when you leave or get home. It never leaves your phone.
+        NSCalendarsFullAccessUsageDescription: Nudge shows today's calendar events next to your tasks on the Today screen. It only reads them.
         CADisableMinimumFrameDurationOnPhone: true   # lets animations use ProMotion above 60Hz
     entitlements:
       path: Nudge/Nudge.entitlements
