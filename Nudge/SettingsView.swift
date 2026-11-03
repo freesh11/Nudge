@@ -40,6 +40,8 @@ struct SettingsView: View {
                 Section {
                     NavigationLink("Developer tools") { DevToolsView() }
                     Button("Run setup again") { onboarded = false }
+                } footer: {
+                    Text("Nudge \(Self.appVersion)")
                 }
             }
             .navigationTitle("Settings")
@@ -150,6 +152,13 @@ struct SettingsView: View {
         let icon: String? = matchIcon && accentName != "orange" ? "AppIcon-\(accentName)" : nil
         guard UIApplication.shared.supportsAlternateIcons, UIApplication.shared.alternateIconName != icon else { return }
         UIApplication.shared.setAlternateIconName(icon, completionHandler: nil)
+    }
+
+    static var appVersion: String {
+        let info = Bundle.main.infoDictionary ?? [:]
+        let version = info["CFBundleShortVersionString"] as? String ?? "?"
+        let stage = info["NudgeStage"] as? String ?? ""
+        return "\(version) \(stage)".trimmingCharacters(in: .whitespaces)
     }
 
     static func hourLabel(_ h: Int) -> String {
