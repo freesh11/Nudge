@@ -27,7 +27,7 @@ struct TodayView: View {
                 .padding(20)
                 .padding(.bottom, 80)
             }
-            .background(Theme.bg)
+            .background(AppBackground())
             .navigationTitle("Today")
         }
     }

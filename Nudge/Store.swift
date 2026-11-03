@@ -134,6 +134,8 @@ enum When: String, CaseIterable {
         assert(!Nudger.isQuiet(hour: 12, bed: 23, wake: 7) && !Nudger.isQuiet(hour: 7, bed: 23, wake: 7))
         assert(Nudger.isQuiet(hour: 2, bed: 1, wake: 9) && !Nudger.isQuiet(hour: 10, bed: 1, wake: 9))
         assert(!Nudger.isQuiet(hour: 5, bed: 6, wake: 6), "same start and end means no quiet hours")
+        assert(LiveBackground.wrap(-5, 100) == 95 && LiveBackground.wrap(250, 100) == 50)
+        assert((0..<500).allSatisfy { i in (0..<10).allSatisfy { (0..<1).contains(LiveBackground.rnd(i, $0)) } })
     }
 }
 

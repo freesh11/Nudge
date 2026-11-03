@@ -32,7 +32,7 @@ struct NowView: View {
             .padding(20)
             .padding(.bottom, 80)
         }
-        .background(Theme.bg)
+        .background(AppBackground())
         .sheet(item: $breaking) { BreakDownView(task: $0) }
     }
 

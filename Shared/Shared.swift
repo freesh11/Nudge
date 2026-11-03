@@ -37,6 +37,7 @@ enum Keys {
     static let onItMins = "onItMins"
     static let defaultWhen = "defaultWhen"
     static let defaultNag = "defaultNag"
+    static let background = "background"
 }
 
 enum SharedStore {

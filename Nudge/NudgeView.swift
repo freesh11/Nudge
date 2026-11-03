@@ -63,6 +63,6 @@ struct NudgeView: View {
         .foregroundStyle(.white)
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Theme.night)
+        .background(AppBackground(base: Theme.night, ink: .white))
     }
 }

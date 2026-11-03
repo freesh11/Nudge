@@ -6,6 +6,7 @@ struct SettingsView: View {
     @AppStorage(Keys.appearance, store: SharedStore.defaults) private var appearance = "system"
     @AppStorage(Keys.accent, store: SharedStore.defaults) private var accentName = "orange"
     @AppStorage(Keys.matchIcon, store: SharedStore.defaults) private var matchIcon = false
+    @AppStorage(Keys.background, store: SharedStore.defaults) private var background = LiveBackground.constellations.rawValue
     @AppStorage(Keys.name, store: SharedStore.defaults) private var name = ""
     @AppStorage(Keys.showWins, store: SharedStore.defaults) private var showWins = true
     @AppStorage(Keys.haptics, store: SharedStore.defaults) private var haptics = true
@@ -66,6 +67,9 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Toggle("App icon matches color", isOn: $matchIcon)
+            Picker("Live background", selection: $background) {
+                ForEach(LiveBackground.allCases) { Text($0.label).tag($0.rawValue) }
+            }
             TextField("Your name, for the greeting", text: $name)
             Toggle("Show wins counter", isOn: $showWins)
             Toggle("Haptics", isOn: $haptics)
