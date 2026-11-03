@@ -73,13 +73,13 @@ enum Nudger {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
     }
 
-    /// Escalating nudges: one at the due time, then repeats every `gap` minutes up to `count`.
-    static func schedule(_ t: NudgeTask, count: Int, gap: Int, buddyName: String) {
+    /// Escalating nudges: one at the due time, then repeats every `gapSeconds` up to `count`.
+    static func schedule(_ t: NudgeTask, count: Int, gapSeconds: Int, buddyName: String) {
         cancel(t.id)
         guard let due = t.due, t.doneAt == nil else { return }
         let total = t.nag ? min(max(1, count), 5) : 1
         for n in 0..<total {
-            let fire = due.addingTimeInterval(Double(n * gap * 60))
+            let fire = due.addingTimeInterval(Double(n * gapSeconds))
             let wait = fire.timeIntervalSinceNow
             guard wait > 1 else { continue }
             let last = total > 1 && n == total - 1

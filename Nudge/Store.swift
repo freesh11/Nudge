@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import WidgetKit
+import UserNotifications
 
 struct NudgeRef: Identifiable {
     let id: UUID
@@ -63,6 +64,13 @@ final class Store: ObservableObject {
         commit()
     }
 
+    func deleteAll() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        tasks = []
+        commit()
+    }
+
     func rescheduleAll() { tasks.forEach { schedule($0) } }
 
     private func update(_ id: UUID, _ change: (inout NudgeTask) -> Void) {
@@ -73,7 +81,7 @@ final class Store: ObservableObject {
     }
 
     private func schedule(_ t: NudgeTask) {
-        Nudger.schedule(t, count: d.integer(forKey: Keys.nudgeCount), gap: d.integer(forKey: Keys.nudgeGap),
+        Nudger.schedule(t, count: d.integer(forKey: Keys.nudgeCount), gapSeconds: d.integer(forKey: Keys.nudgeGap) * 60,
                         buddyName: d.string(forKey: Keys.buddyName) ?? "")
     }
 

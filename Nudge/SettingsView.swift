@@ -58,7 +58,10 @@ struct SettingsView: View {
                     Text("After your last nudge, Nudge offers a one-tap text to your buddy. iOS doesn't let apps send texts for you, so you still hit send.")
                 }
 
-                Section { Button("Run setup again") { onboarded = false } }
+                Section {
+                    NavigationLink("Developer tools") { DevToolsView() }
+                    Button("Run setup again") { onboarded = false }
+                }
             }
             .navigationTitle("Settings")
             .onChange(of: nudgeCount) { store.rescheduleAll() }

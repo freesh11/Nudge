@@ -11,6 +11,7 @@ xcodebuild -project Nudge.xcodeproj -target Nudge -configuration Release -sdk ip
 
 app="build/Release-iphoneos/Nudge.app"
 test -d "$app/PlugIns/NudgeWidget.appex" || { echo "Widget missing from the app bundle"; exit 1; }
+test -f "$app/Assets.car" || { echo "App icon missing from the app bundle"; exit 1; }
 
 rm -rf Payload Nudge.ipa
 mkdir Payload
